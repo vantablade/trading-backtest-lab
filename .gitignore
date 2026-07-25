@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environments
+.venv/
+uv.lock
+
+# Backtest outputs (keep the directory, not the runs)
+/results/run_*/
+
+# Data (raw is immutable but not committed here)
+/data/raw/*
+/data/processed/*
+!**/.gitkeep

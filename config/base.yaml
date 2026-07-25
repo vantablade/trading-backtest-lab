@@ -1,0 +1,34 @@
+# config/base.yaml
+#
+# Base configuration merged under every strategy config. YAML only — no logic.
+# Strategy params live in config/strategies/<name>.yaml and override these.
+
+seed: 7
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits: data/splits.yaml
+  symbol: null            # set per strategy
+  bar_interval: 1h
+
+engine:
+  initial_cash: 100000
+  # Execution is deferred one bar: a signal decided on bar t fills at bar t+1's
+  # open. This is enforced structurally by the engine, not by config.
+  execution: next_open
+
+costs:
+  # Pessimistic by default (CLAUDE.md rule 4). Basis points of traded notional,
+  # charged on every trade. When unsure, raise these, never lower them.
+  model: bps
+  fee_bps: 5
+  half_spread_bps: 5
+  slippage_bps: 5
+
+risk:
+  # Placeholder. Position sizing and limits are not implemented yet; they belong
+  # in src/lab/risk/ and will consume the strategy's target weight.
+  max_gross_exposure: 1.0
+
+results_dir: results

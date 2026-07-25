@@ -1,0 +1,23 @@
+# data/splits.yaml
+#
+# Train / validate / holdout date ranges (UTC, inclusive).
+#
+# THE HOLDOUT IS SACRED (CLAUDE.md rule 3): it may be loaded exactly once, at the
+# very end of the project, by explicit human instruction. Never run a backtest
+# against it "just to check". Never tune against validation more than the
+# experiment log records.
+#
+# These are placeholder ranges. Replace them with real dates once a dataset is
+# committed under data/raw/.
+
+train:
+  start: 2018-01-01T00:00:00Z
+  end:   2022-12-31T23:59:59Z
+
+validate:
+  start: 2023-01-01T00:00:00Z
+  end:   2023-12-31T23:59:59Z
+
+holdout:
+  start: 2024-01-01T00:00:00Z
+  end:   2024-12-31T23:59:59Z
