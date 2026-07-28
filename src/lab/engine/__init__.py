@@ -6,7 +6,7 @@ green.
 """
 
 from .bars import BarConventionError, BarLabel, IntervalMismatchError, OHLCVFrame
-from .loop import REQUIRED_BAR_LABEL, BacktestResult, run_backtest
+from .loop import REQUIRED_BAR_LABEL, BacktestResult, EquityPoint, run_backtest
 from .market_view import BoundedSeries, LookaheadError, MarketView
 from .portfolio import Fill, Portfolio
 from .signals import Signal, Strategy
@@ -17,6 +17,7 @@ __all__ = [
     "BarConventionError",
     "BarLabel",
     "BoundedSeries",
+    "EquityPoint",
     "Fill",
     "IntervalMismatchError",
     "LookaheadError",

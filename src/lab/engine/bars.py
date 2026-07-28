@@ -144,6 +144,28 @@ class OHLCVFrame:
             ("volume", self.volume),
         )
 
+    def between(self, start: datetime, end: datetime) -> OHLCVFrame:
+        """A new frame with only the bars whose timestamp is in ``[start, end]``.
+
+        Used to enforce split boundaries: a run on one split literally cannot see
+        another split's bars. Interval and label are preserved. Raises if the
+        range contains no bars.
+        """
+        keep = [i for i, ts in enumerate(self.timestamps) if start <= ts <= end]
+        if not keep:
+            raise ValueError(f"no bars in [{start.isoformat()}, {end.isoformat()}]")
+        idx = np.array(keep, dtype=np.intp)
+        return OHLCVFrame(
+            timestamps=self.timestamps[idx],
+            open=self.open[idx],
+            high=self.high[idx],
+            low=self.low[idx],
+            close=self.close[idx],
+            volume=self.volume[idx],
+            interval=self.interval,
+            label=self.label,
+        )
+
     def __len__(self) -> int:
         return len(self.timestamps)
 

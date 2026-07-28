@@ -6,7 +6,7 @@ defaults to a pessimistic bps model, so a gross-of-cost number can never leak
 out by accident.
 """
 
-from .base import CostModel
+from .base import CostBreakdown, CostModel
 from .simple import BpsCost, default_cost_model
 
-__all__ = ["BpsCost", "CostModel", "default_cost_model"]
+__all__ = ["BpsCost", "CostBreakdown", "CostModel", "default_cost_model"]

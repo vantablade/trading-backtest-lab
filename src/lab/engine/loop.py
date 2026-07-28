@@ -20,7 +20,7 @@ Two no-lookahead properties are enforced structurally here:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from ..costs.base import CostModel
@@ -35,8 +35,22 @@ REQUIRED_BAR_LABEL = BarLabel.OPEN
 
 
 @dataclass(frozen=True)
+class EquityPoint:
+    """One bar's mark-to-market book, marked at the bar's close.
+
+    ``exposure`` is position value divided by equity (the fraction of equity at
+    risk); it is a derived ratio, so it is a float, not Decimal.
+    """
+
+    timestamp: datetime
+    equity: Decimal
+    position: Decimal
+    exposure: float
+
+
+@dataclass(frozen=True)
 class BacktestResult:
-    """The outcome of a run: the fills and the final book.
+    """The outcome of a run: the fills, the per-bar equity curve, and the book.
 
     ``interval`` is copied from the frame so downstream metrics (annualisation,
     turnover per unit time) never have to re-derive the bar spacing.
@@ -44,7 +58,9 @@ class BacktestResult:
 
     frame: OHLCVFrame
     interval: timedelta
+    initial_cash: Decimal
     fills: list[Fill]
+    equity_curve: list[EquityPoint]
     final_cash: Decimal
     final_position: Decimal
 
@@ -75,6 +91,7 @@ def run_backtest(
     cm = cost_model if cost_model is not None else default_cost_model()
     portfolio = Portfolio(cash=initial_cash, cost_model=cm)
 
+    equity_curve: list[EquityPoint] = []
     pending: Signal | None = None
     for t in range(len(frame)):
         # Execute the previous bar's decision at THIS bar's open. Never same-bar.
@@ -93,10 +110,26 @@ def run_backtest(
         # The signal from the final bar is intentionally left unexecuted:
         # there is no future bar to fill it at.
 
+        # Mark to market at the bar's close.
+        close_t = Decimal(str(frame.close[t]))
+        equity_t = portfolio.equity(close_t)
+        position_value = portfolio.position * close_t
+        exposure_t = float(position_value / equity_t) if equity_t != 0 else 0.0
+        equity_curve.append(
+            EquityPoint(
+                timestamp=frame.timestamps[t],
+                equity=equity_t,
+                position=portfolio.position,
+                exposure=exposure_t,
+            )
+        )
+
     return BacktestResult(
         frame=frame,
         interval=frame.interval,
+        initial_cash=initial_cash,
         fills=portfolio.fills,
+        equity_curve=equity_curve,
         final_cash=portfolio.cash,
         final_position=portfolio.position,
     )
