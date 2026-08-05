@@ -1,23 +1,22 @@
 # data/splits.yaml
 #
-# Train / validate / holdout date ranges (UTC, inclusive).
+# Train / validate / holdout date ranges (UTC, inclusive), set to the committed
+# SPY daily dataset (data/raw/spy_1d.csv, 2005-02-25 .. 2026-07-24). Boundaries
+# are clean calendar years: roughly 60% train / 20% validate / 20% holdout.
 #
 # THE HOLDOUT IS SACRED (CLAUDE.md rule 3): it may be loaded exactly once, at the
-# very end of the project, by explicit human instruction. Never run a backtest
-# against it "just to check". Never tune against validation more than the
-# experiment log records.
-#
-# These are placeholder ranges. Replace them with real dates once a dataset is
-# committed under data/raw/.
+# very end of the project, by explicit human instruction (--allow-holdout). Never
+# run a backtest against it "just to check". Never tune against validation more
+# than the experiment log records.
 
 train:
-  start: 2018-01-01T00:00:00Z
-  end:   2022-12-31T23:59:59Z
+  start: 2005-01-01T00:00:00Z
+  end:   2017-12-31T23:59:59Z
 
 validate:
-  start: 2023-01-01T00:00:00Z
-  end:   2023-12-31T23:59:59Z
+  start: 2018-01-01T00:00:00Z
+  end:   2021-12-31T23:59:59Z
 
 holdout:
-  start: 2024-01-01T00:00:00Z
-  end:   2024-12-31T23:59:59Z
+  start: 2022-01-01T00:00:00Z
+  end:   2026-12-31T23:59:59Z

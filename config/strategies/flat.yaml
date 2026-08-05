@@ -1,0 +1,8 @@
+# config/strategies/flat.yaml — null control (never takes a position).
+# A baseline to compare real strategies against; produces no trades.
+strategy:
+  name: flat
+  params: {}
+data:
+  source: data/raw/spy_1d.csv
+  bar_interval: 1d

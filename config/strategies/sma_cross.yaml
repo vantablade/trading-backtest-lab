@@ -1,0 +1,10 @@
+# config/strategies/sma_cross.yaml — fast/slow SMA crossover on daily SPY.
+# fast=20, slow=50: conventional, unoptimized, deliberately NOT tuned.
+strategy:
+  name: sma_cross
+  params:
+    fast: 20
+    slow: 50
+data:
+  source: data/raw/spy_1d.csv
+  bar_interval: 1d
