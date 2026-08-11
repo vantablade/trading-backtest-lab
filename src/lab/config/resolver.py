@@ -74,11 +74,22 @@ class ResolvedConfig:
     def config_hash(self) -> str:
         return self.merged["config_hash"]
 
+    def is_multi_asset(self) -> bool:
+        """True when the config names several assets (``data.sources``)."""
+        return "sources" in self.merged["data"]
+
     def data_source(self) -> Path:
         data = self.merged["data"]
         if "source" not in data:
             raise ConfigError("data.source is required (set it in the strategy config)")
         return self.root / data["source"]
+
+    def data_sources(self) -> dict[str, Path]:
+        """Symbol -> path for a multi-asset config (``data.sources``)."""
+        sources = self.merged["data"].get("sources")
+        if not sources:
+            raise ConfigError("data.sources is required for a multi-asset strategy")
+        return {symbol: self.root / path for symbol, path in sources.items()}
 
     def bar_interval(self) -> timedelta:
         return parse_interval(self.merged["data"]["bar_interval"])

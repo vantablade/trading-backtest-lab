@@ -9,12 +9,13 @@ clobber under concurrency, and a crash never leaves a complete-looking run.
 
 from .provenance import git_provenance
 from .reader import RunArtifacts, read_run
-from .writer import DataSourceRef, write_run
+from .writer import DataSourceRef, write_panel_run, write_run
 
 __all__ = [
     "DataSourceRef",
     "RunArtifacts",
     "git_provenance",
     "read_run",
+    "write_panel_run",
     "write_run",
 ]

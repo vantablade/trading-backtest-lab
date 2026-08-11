@@ -4,6 +4,10 @@ A run directory contains ``trades.parquet``, ``equity.parquet``, ``metrics.json`
 ``config.yaml`` and ``manifest.json`` — enough to reproduce the run from the
 directory alone (data pinned by checksum, config resolved, code pinned by commit).
 
+Single-asset runs (:func:`write_run`) and multi-asset panel runs
+(:func:`write_panel_run`) share the same atomic-publish machinery; the panel
+variant adds a ``symbol`` column to trades and records every source's checksum.
+
 Two robustness properties:
 
 * **Atomic numbering.** The run number is claimed by trying to ``os.rename`` the
@@ -26,7 +30,7 @@ import os
 import re
 import shutil
 import tempfile
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -36,18 +40,19 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import yaml
 
-from ..engine import BacktestResult
+from ..engine import BacktestResult, PanelBacktestResult
 from ..metrics import compute_metrics
 from .provenance import git_provenance
 
 _RUN_RE = re.compile(r"run_(\d+)")
 _TS = pa.timestamp("us", tz="UTC")
 _F = pa.float64()
+_STR = pa.string()
 
 _TRADES_SCHEMA = pa.schema(
     [
         ("timestamp", _TS),
-        ("side", pa.string()),
+        ("side", _STR),
         ("price", _F),
         ("size", _F),
         ("fees", _F),
@@ -56,14 +61,21 @@ _TRADES_SCHEMA = pa.schema(
         ("position_after", _F),
     ]
 )
-_EQUITY_SCHEMA = pa.schema(
+_EQUITY_SCHEMA = pa.schema([("timestamp", _TS), ("equity", _F), ("position", _F), ("exposure", _F)])
+_PANEL_TRADES_SCHEMA = pa.schema(
     [
         ("timestamp", _TS),
-        ("equity", _F),
-        ("position", _F),
-        ("exposure", _F),
+        ("symbol", _STR),
+        ("side", _STR),
+        ("price", _F),
+        ("size", _F),
+        ("fees", _F),
+        ("slippage", _F),
+        ("realised_pnl", _F),
+        ("position_after", _F),
     ]
 )
+_PANEL_EQUITY_SCHEMA = pa.schema([("timestamp", _TS), ("equity", _F), ("gross_exposure", _F)])
 
 
 @dataclass(frozen=True)
@@ -72,6 +84,7 @@ class DataSourceRef:
 
     path: str
     sha256: str
+    symbol: str = ""  # set for multi-asset sources; blank for single-asset
 
 
 def write_run(
@@ -83,26 +96,46 @@ def write_run(
     repo_dir: str | Path | None = None,
     metrics: Mapping[str, Any] | None = None,
 ) -> Path:
-    """Write ``result`` to a fresh ``results_dir/run_NNNN/`` and return its path.
+    """Write a single-asset ``result`` to a fresh ``results_dir/run_NNNN/``."""
+    repo = Path(repo_dir) if repo_dir is not None else Path.cwd()
 
-    ``config`` is the fully resolved run config (written verbatim to
-    ``config.yaml``). ``sources`` pin the raw data by checksum. ``repo_dir`` is
-    the repository whose commit is recorded (defaults to the current directory).
-    ``metrics`` overrides the computed summary if given.
-    """
+    def populate(directory: Path) -> None:
+        pq.write_table(_trades_table(result), directory / "trades.parquet")
+        pq.write_table(_equity_table(result), directory / "equity.parquet")
+        summary = dict(metrics) if metrics is not None else compute_metrics(result)
+        _write_meta(directory, summary, config, _build_manifest(result, sources, repo))
+
+    return _publish(results_dir, populate)
+
+
+def write_panel_run(
+    results_dir: str | Path,
+    *,
+    result: PanelBacktestResult,
+    config: Mapping[str, Any],
+    sources: Sequence[DataSourceRef] = (),
+    repo_dir: str | Path | None = None,
+    metrics: Mapping[str, Any] | None = None,
+) -> Path:
+    """Write a multi-asset panel ``result`` to a fresh ``results_dir/run_NNNN/``."""
+    repo = Path(repo_dir) if repo_dir is not None else Path.cwd()
+
+    def populate(directory: Path) -> None:
+        pq.write_table(_panel_trades_table(result), directory / "trades.parquet")
+        pq.write_table(_panel_equity_table(result), directory / "equity.parquet")
+        summary = dict(metrics) if metrics is not None else compute_metrics(result)
+        _write_meta(directory, summary, config, _build_panel_manifest(result, sources, repo))
+
+    return _publish(results_dir, populate)
+
+
+def _publish(results_dir: str | Path, populate: Callable[[Path], None]) -> Path:
     results_dir = Path(results_dir)
     results_dir.mkdir(parents=True, exist_ok=True)
 
     staged = Path(tempfile.mkdtemp(prefix=".tmp-run-", dir=results_dir))
     try:
-        _write_artifacts(
-            staged,
-            result=result,
-            config=config,
-            sources=sources,
-            repo_dir=Path(repo_dir) if repo_dir is not None else Path.cwd(),
-            metrics=metrics,
-        )
+        populate(staged)
     except BaseException:
         shutil.rmtree(staged, ignore_errors=True)
         raise
@@ -129,28 +162,18 @@ def _next_run_number(results_dir: Path) -> int:
     return highest + 1
 
 
-def _write_artifacts(
+def _write_meta(
     directory: Path,
-    *,
-    result: BacktestResult,
+    summary: Mapping[str, Any],
     config: Mapping[str, Any],
-    sources: Sequence[DataSourceRef],
-    repo_dir: Path,
-    metrics: Mapping[str, Any] | None,
+    manifest: dict[str, Any],
 ) -> None:
-    pq.write_table(_trades_table(result), directory / "trades.parquet")
-    pq.write_table(_equity_table(result), directory / "equity.parquet")
-
-    summary = dict(metrics) if metrics is not None else compute_metrics(result)
     (directory / "metrics.json").write_text(
-        json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        json.dumps(dict(summary), indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-
     (directory / "config.yaml").write_text(
         yaml.safe_dump(dict(config), sort_keys=False), encoding="utf-8"
     )
-
-    manifest = _build_manifest(result, sources, repo_dir)
     (directory / "manifest.json").write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
     )
@@ -170,6 +193,29 @@ def _build_manifest(
             "interval_seconds": result.interval.total_seconds(),
             "bar_label": frame.label.value,
             "n_bars": len(frame),
+        },
+        "code": git_provenance(repo_dir),
+        "engine": {"initial_cash": str(result.initial_cash)},
+    }
+
+
+def _build_panel_manifest(
+    result: PanelBacktestResult, sources: Sequence[DataSourceRef], repo_dir: Path
+) -> dict[str, Any]:
+    panel = result.panel
+    timestamps = panel.timestamps
+    return {
+        "created_utc": datetime.now(UTC).isoformat(),
+        "data": {
+            "sources": [{"symbol": s.symbol, "path": s.path, "sha256": s.sha256} for s in sources],
+            "symbols": list(panel.symbols),
+            "start": timestamps[0].isoformat(),
+            "end": timestamps[-1].isoformat(),
+            "interval": str(result.interval),
+            "interval_seconds": result.interval.total_seconds(),
+            "bar_label": panel.label.value,
+            "n_bars": len(panel),
+            "n_symbols": len(panel.symbols),
         },
         "code": git_provenance(repo_dir),
         "engine": {"initial_cash": str(result.initial_cash)},
@@ -200,6 +246,32 @@ def _equity_table(result: BacktestResult) -> pa.Table:
         "exposure": [p.exposure for p in curve],
     }
     return _typed_table(_EQUITY_SCHEMA, columns)
+
+
+def _panel_trades_table(result: PanelBacktestResult) -> pa.Table:
+    fills = result.fills
+    columns = {
+        "timestamp": [f.timestamp for f in fills],
+        "symbol": [f.symbol for f in fills],
+        "side": ["buy" if f.units > 0 else "sell" for f in fills],
+        "price": [float(f.price) for f in fills],
+        "size": [float(abs(f.units)) for f in fills],
+        "fees": [float(f.costs.fees) for f in fills],
+        "slippage": [float(f.costs.spread + f.costs.slippage) for f in fills],
+        "realised_pnl": [float(f.realised_pnl) for f in fills],
+        "position_after": [float(f.position_after) for f in fills],
+    }
+    return _typed_table(_PANEL_TRADES_SCHEMA, columns)
+
+
+def _panel_equity_table(result: PanelBacktestResult) -> pa.Table:
+    curve = result.equity_curve
+    columns = {
+        "timestamp": [p.timestamp for p in curve],
+        "equity": [float(p.equity) for p in curve],
+        "gross_exposure": [p.gross_exposure for p in curve],
+    }
+    return _typed_table(_PANEL_EQUITY_SCHEMA, columns)
 
 
 def _typed_table(schema: pa.Schema, columns: dict[str, list[Any]]) -> pa.Table:

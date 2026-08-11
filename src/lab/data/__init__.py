@@ -16,12 +16,15 @@ from .integrity import (
     find_gaps,
 )
 from .loader import LoadResult, load_csv_bars
+from .panel_loader import PanelLoadResult, load_panel
 
 __all__ = [
     "DataIntegrityError",
     "IntegrityReport",
     "LoadResult",
+    "PanelLoadResult",
     "check_ohlc_consistency",
     "find_gaps",
     "load_csv_bars",
+    "load_panel",
 ]
