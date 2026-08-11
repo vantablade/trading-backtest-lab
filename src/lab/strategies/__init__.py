@@ -8,7 +8,13 @@ one: ``flat`` (a null cash control), ``buy_and_hold`` (the asset benchmark), and
 register the same way.
 """
 
-from . import buy_and_hold, flat, sma_cross  # noqa: F401  (imports register the strategies)
+from . import (  # noqa: F401  (imports register the strategies)
+    buy_and_hold,
+    equal_weight_buy_hold,
+    flat,
+    sma_cross,
+    xsec_momentum,
+)
 from .registry import available, get_strategy, register
 
 __all__ = ["available", "get_strategy", "register"]

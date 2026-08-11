@@ -1,0 +1,21 @@
+# config/strategies/xsec_momentum.yaml
+# Cross-sectional momentum over the 9 SPDR sector ETFs. Params LOCKED by
+# convention (126-bar ~6mo lookback, top 3, monthly), not tuned.
+strategy:
+  name: xsec_momentum
+  params:
+    lookback: 126
+    hold_top: 3
+    rebalance: monthly
+data:
+  bar_interval: 1d
+  sources:
+    XLB: data/raw/xlb_1d.csv
+    XLE: data/raw/xle_1d.csv
+    XLF: data/raw/xlf_1d.csv
+    XLI: data/raw/xli_1d.csv
+    XLK: data/raw/xlk_1d.csv
+    XLP: data/raw/xlp_1d.csv
+    XLU: data/raw/xlu_1d.csv
+    XLV: data/raw/xlv_1d.csv
+    XLY: data/raw/xly_1d.csv

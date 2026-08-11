@@ -5,15 +5,16 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from typing import Any
 
-from ..engine import Strategy
+from ..engine import PanelStrategy, Strategy
 
-_REGISTRY: dict[str, Callable[..., Strategy]] = {}
+AnyStrategy = Strategy | PanelStrategy  # single-asset or cross-sectional
+_REGISTRY: dict[str, Callable[..., AnyStrategy]] = {}
 
 
-def register(name: str) -> Callable[[Callable[..., Strategy]], Callable[..., Strategy]]:
+def register(name: str) -> Callable[[Callable[..., AnyStrategy]], Callable[..., AnyStrategy]]:
     """Class decorator that registers a strategy under ``name``."""
 
-    def decorator(factory: Callable[..., Strategy]) -> Callable[..., Strategy]:
+    def decorator(factory: Callable[..., AnyStrategy]) -> Callable[..., AnyStrategy]:
         if name in _REGISTRY:
             raise ValueError(f"strategy {name!r} is already registered")
         _REGISTRY[name] = factory
@@ -22,7 +23,7 @@ def register(name: str) -> Callable[[Callable[..., Strategy]], Callable[..., Str
     return decorator
 
 
-def get_strategy(name: str, params: Mapping[str, Any] | None = None) -> Strategy:
+def get_strategy(name: str, params: Mapping[str, Any] | None = None) -> AnyStrategy:
     """Build the registered strategy ``name`` with ``params`` as constructor kwargs."""
     try:
         factory = _REGISTRY[name]

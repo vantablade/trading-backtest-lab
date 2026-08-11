@@ -1,0 +1,18 @@
+# config/strategies/equal_weight_buy_hold.yaml
+# The cross-sectional benchmark: hold all 9 sector ETFs at equal weight, no
+# rebalancing on signal. Scored against, not tuned.
+strategy:
+  name: equal_weight_buy_hold
+  params: {}
+data:
+  bar_interval: 1d
+  sources:
+    XLB: data/raw/xlb_1d.csv
+    XLE: data/raw/xle_1d.csv
+    XLF: data/raw/xlf_1d.csv
+    XLI: data/raw/xli_1d.csv
+    XLK: data/raw/xlk_1d.csv
+    XLP: data/raw/xlp_1d.csv
+    XLU: data/raw/xlu_1d.csv
+    XLV: data/raw/xlv_1d.csv
+    XLY: data/raw/xly_1d.csv
