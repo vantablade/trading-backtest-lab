@@ -38,3 +38,22 @@ mediocre, which is exactly what a trustworthy backtester should do. Also logged:
 back-adjusted (non-point-in-time) prices, second-order for a ratio-based cross;
 execution now trades on target-change only. Keep buy-and-hold as the standing
 benchmark for all future strategies; keep flat as the zero-signal control.
+
+## run_NNNN — xsec_momentum (126/top3/monthly) on train
+**Hypothesis:** Cross-sectional momentum. Sector ETFs that outperformed
+over the trailing ~6 months tend to outperform over the next month,
+because investors underreact to sector-level information so trends persist,
+and the effect isn't arbitraged away because momentum periodically crashes
+hard (e.g. 2009) — it's compensation for real crash risk, not a free lunch.
+**Change:** First strategy with a genuine pre-registered economic hypothesis.
+Rank 9 SPDR sector ETFs by trailing 126-bar return, hold top 3 equal-weight,
+rebalance monthly. Params locked by convention, not tuned.
+**Prediction:** Positive edge over equal-weight buy-and-hold benchmark on the
+same cost model — a higher Sharpe, not just higher raw return. Published
+momentum Sharpes for this kind of setup are ~0.4-0.8, so I expect something
+in that range. LEAK TRIPWIRE: a Sharpe above ~1.5 means suspect a bug
+(survivorship, lookahead in the ranking, or costs too gentle) BEFORE
+believing the edge.
+**Result:** <blank>
+**Verdict:** <blank>
+**Notes:** <blank>
