@@ -8,6 +8,9 @@ green.
 from .bars import BarConventionError, BarLabel, IntervalMismatchError, OHLCVFrame
 from .loop import REQUIRED_BAR_LABEL, BacktestResult, EquityPoint, run_backtest
 from .market_view import BoundedSeries, LookaheadError, MarketView
+from .multi_portfolio import MultiAssetPortfolio
+from .panel import Panel, PanelView, align_panel
+from .panel_loop import PanelBacktestResult, PanelEquityPoint, PanelStrategy, run_panel_backtest
 from .portfolio import Fill, Portfolio
 from .signals import Signal, Strategy
 
@@ -22,9 +25,17 @@ __all__ = [
     "IntervalMismatchError",
     "LookaheadError",
     "MarketView",
+    "MultiAssetPortfolio",
     "OHLCVFrame",
+    "Panel",
+    "PanelBacktestResult",
+    "PanelEquityPoint",
+    "PanelStrategy",
+    "PanelView",
     "Portfolio",
     "Signal",
     "Strategy",
+    "align_panel",
     "run_backtest",
+    "run_panel_backtest",
 ]

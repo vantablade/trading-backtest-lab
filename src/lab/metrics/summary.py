@@ -13,17 +13,23 @@ would over-annualise daily data by a factor of ~sqrt(365/252).
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from decimal import Decimal
+from typing import Any
 
 import numpy as np
 
-from ..engine import BacktestResult, EquityPoint
+from ..engine import BacktestResult, PanelBacktestResult
 
 _YEAR_SECONDS = 365.25 * 24 * 3600
 
 
-def compute_metrics(result: BacktestResult) -> dict[str, float | int]:
-    """Summary statistics computed from the run's equity curve and fills."""
+def compute_metrics(result: BacktestResult | PanelBacktestResult) -> dict[str, float | int]:
+    """Summary statistics from a run's equity curve and fills.
+
+    Works for both single-asset and panel results: it needs only ``equity_curve``
+    (points with ``timestamp`` and ``equity``), ``fills``, and ``initial_cash``.
+    """
     curve = result.equity_curve
     initial = float(result.initial_cash)
     equities = np.array([float(p.equity) for p in curve], dtype=float)
@@ -33,7 +39,7 @@ def compute_metrics(result: BacktestResult) -> dict[str, float | int]:
     returns = equities[1:] / equities[:-1] - 1.0 if equities.size > 1 else np.empty(0)
 
     return {
-        "n_bars": len(result.frame),
+        "n_bars": len(curve),
         "n_trades": len(result.fills),
         "initial_equity": initial,
         "final_equity": final,
@@ -46,7 +52,7 @@ def compute_metrics(result: BacktestResult) -> dict[str, float | int]:
     }
 
 
-def _years_elapsed(curve: list[EquityPoint]) -> float:
+def _years_elapsed(curve: Sequence[Any]) -> float:
     if len(curve) < 2:
         return 0.0
     return (curve[-1].timestamp - curve[0].timestamp).total_seconds() / _YEAR_SECONDS

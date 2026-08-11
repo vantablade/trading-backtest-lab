@@ -36,6 +36,7 @@ class Fill:
     costs: CostBreakdown
     realised_pnl: Decimal  # on the portion closed by this fill, gross of costs
     position_after: Decimal
+    symbol: str = ""  # set by multi-asset runs; single-asset leaves it blank
 
 
 @dataclass
