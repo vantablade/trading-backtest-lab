@@ -8,8 +8,13 @@ so the writer serialises rather than re-derives accounting.
 
 Realised PnL uses average-cost basis: increasing a position moves the average
 entry price; reducing, closing, or flipping it realises PnL on the closed
-portion (gross of costs, which are reported separately). The weight-to-size
-mapping is a deliberate placeholder; real sizing belongs in ``lab.risk``.
+portion (gross of costs, which are reported separately).
+
+Execution is on *signal transitions*, not every bar: a trade happens only when
+the target weight changes from the one currently held. A signal held constant
+(e.g. long) is entered once and held — no per-bar rebalancing churn. The
+weight-to-size mapping is a deliberate placeholder; real sizing belongs in
+``lab.risk``.
 """
 
 from __future__ import annotations
@@ -42,20 +47,29 @@ class Portfolio:
     position: Decimal = Decimal(0)
     avg_price: Decimal = Decimal(0)
     fills: list[Fill] = field(default_factory=list)
+    # The target weight currently held. Starts at 0 (flat/cash). A trade fires
+    # only when a new target differs from this — see set_target_weight.
+    _target_weight: Decimal = field(default=Decimal(0), init=False)
 
     def equity(self, price: Decimal) -> Decimal:
         return self.cash + self.position * price
 
     def set_target_weight(self, target_weight: float, price: float, timestamp: datetime) -> None:
-        """Rebalance toward ``target_weight`` of equity at ``price``.
+        """Move to ``target_weight`` of equity at ``price``, only on a change.
 
-        A no-op trade (delta of zero) records nothing. Otherwise the trade is
-        charged the cost model's cost, its realised PnL and resulting position
-        are computed, and a :class:`Fill` is appended.
+        If the target weight equals the one already held, nothing happens — the
+        existing position is held, with no rebalancing trade. Otherwise the trade
+        to the new target is charged the cost model's cost, its realised PnL and
+        resulting position are computed, and a :class:`Fill` is appended.
         """
+        weight = Decimal(str(target_weight))
+        if weight == self._target_weight:
+            return  # signal unchanged: hold, do not churn
+        self._target_weight = weight
+
         price_d = Decimal(str(price))
         equity = self.equity(price_d)
-        target_units = (Decimal(str(target_weight)) * equity) / price_d
+        target_units = (weight * equity) / price_d
         delta = target_units - self.position
         if delta == 0:
             return
