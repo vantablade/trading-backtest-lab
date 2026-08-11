@@ -1,0 +1,8 @@
+# config/strategies/buy_and_hold.yaml — benchmark: hold the asset for the run.
+# Scored against, not tuned. Same cost model as every other strategy.
+strategy:
+  name: buy_and_hold
+  params: {}
+data:
+  source: data/raw/spy_1d.csv
+  bar_interval: 1d
