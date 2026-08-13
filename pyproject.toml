@@ -1,7 +1,7 @@
 [project]
-name = "lab"
+name = "honest-backtest-lab"
 version = "0.0.1"
-description = "A research lab for systematic trading strategies — an honest evaluation harness."
+description = "An honest evaluation harness for systematic trading hypotheses — built to disprove its own ideas."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
