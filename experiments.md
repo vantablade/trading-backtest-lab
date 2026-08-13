@@ -39,7 +39,7 @@ back-adjusted (non-point-in-time) prices, second-order for a ratio-based cross;
 execution now trades on target-change only. Keep buy-and-hold as the standing
 benchmark for all future strategies; keep flat as the zero-signal control.
 
-## run_NNNN — xsec_momentum (126/top3/monthly) on train
+## run_0004 — xsec_momentum (126/top3/monthly) on train
 **Hypothesis:** Cross-sectional momentum. Sector ETFs that outperformed
 over the trailing ~6 months tend to outperform over the next month,
 because investors underreact to sector-level information so trends persist,
@@ -54,6 +54,30 @@ momentum Sharpes for this kind of setup are ~0.4-0.8, so I expect something
 in that range. LEAK TRIPWIRE: a Sharpe above ~1.5 means suspect a bug
 (survivorship, lookahead in the ranking, or costs too gentle) BEFORE
 believing the edge.
-**Result:** <blank>
-**Verdict:** <blank>
-**Notes:** <blank>
+**Result:** xsec_momentum (126/top3/monthly) vs equal_weight_buy_hold, train,
+same costs:
+- Sharpe 0.39 vs benchmark 0.51 — LOWER. CAGR 5.4% vs 7.7% — lower. Final 197k
+  vs 260k.
+- No leak: Sharpe far below the 1.5 tripwire; this is an honest miss, not a bug.
+- No crash protection: always fully invested in 3 sectors, rode 2008 to −51.7%
+  (~same as benchmark's −53.1%). Consistent with the pre-registered hypothesis
+  that momentum crashes hard — the 2009 momentum crash sits inside this train
+  window.
+- Cost drag: $15.4k in monthly rebalancing vs benchmark's $150.
+- Survivorship structurally absent (9 original SPDRs, full history); panel
+  no-lookahead test passed. So the miss is real, not an artifact.
+
+**Verdict:** kill (this configuration). Pre-registered edge falsified: sector
+momentum did not beat its proper benchmark on train, on risk-adjusted or raw
+terms. Does NOT falsify momentum in general — the loss is concentrated in the
+2008–09 crash (which the hypothesis anticipated) and in rebalance costs. A
+crash-aware or cross-sectional-vs-benchmark variant would be a new hypothesis,
+not a re-tune of this one.
+
+**Notes:** Fourth honest verdict; harness validated again on a
+genuinely-motivated pre-registered strategy. Multi-asset track
+(Panel/PanelView/MultiAssetPortfolio) works end-to-end, panel-level no-lookahead
+proven. Executor rebalances on composition-change, not strict
+trim-to-equal-monthly (documented, not a bug). Did NOT reach validate — a
+strategy must beat its benchmark on train first; this didn't, so validate stays
+untouched.
